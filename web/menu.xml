@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+    <menulist>
+        <menu id="esp32_relay" desc="Control Relé ESP32" parent="pbx" link="?menu=esp32_relay" order="999">
+            <permissions>
+                <group id="administrator" desc="Administrators" />
+            </permissions>
+        </menu>
+    </menulist>
+</module>

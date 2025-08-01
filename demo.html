@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Relé ESP32 - Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --dark-color: #1f2937;
+            --light-bg: #f8fafc;
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            color: var(--dark-color) !important;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+        
+        .nav-tabs {
+            background: var(--light-bg);
+            border: none;
+            padding: 1rem 1rem 0;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 12px;
+            margin-right: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            color: #64748b;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin: 1.5rem;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+            border: none;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 1.5rem;
+        }
+        
+        .card-header h3 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .btn {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+        
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+
+        
+        .table tbody td {
+            padding: 0.5rem;
+            border-color: #f1f5f9;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        
+        .table thead th {
+            background: var(--light-bg);
+            border: none;
+            font-weight: 600;
+            color: var(--dark-color);
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.02);
+        }
+        
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.7rem;
+        }
+        
+        .badge-success { background: var(--success-color); }
+        .badge-danger { background: var(--danger-color); }
+        .badge-warning { background: var(--warning-color); color: white; }
+        .badge-info { background: var(--info-color); }
+        .badge-secondary { background: #64748b; }
+        
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .filter-section {
+            background: var(--light-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="fas fa-microchip me-2"></i>
+                Issabel - Control de Relé ESP32
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-success me-2">
+                    <i class="fas fa-circle me-1"></i>Online
+                </span>
+                <i class="fas fa-user-circle fs-4 text-muted"></i>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-11">
+                <div class="main-container">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#logs" onclick="showTab('logs')">
+                                <i class="fas fa-history me-2"></i>Log de Auditoría
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#extensions" onclick="showTab('extensions')">
+                                <i class="fas fa-users me-2"></i>Extensiones Autorizadas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#config" onclick="showTab('config')">
+                                <i class="fas fa-cog me-2"></i>Configuración
+                            </a>
+                        </li>
+                    </ul>
+                
+                    <!-- Tab Logs -->
+                    <div id="logs" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <div class="icon-wrapper me-3">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    Log de Auditoría ESP32
+                                </h3>
+                            </div>
+                        <div class="card-body">
+                            <div class="filter-section">
+                                <form class="mb-0">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt me-2"></i>Desde:
+                                            </label>
+                                            <input type="date" class="form-control" value="2024-01-15">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt me-2"></i>Hasta:
+                                            </label>
+                                            <input type="date" class="form-control" value="2024-01-15">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-phone me-2"></i>Extensión:
+                                            </label>
+                                            <input type="text" class="form-control" placeholder="Ej: 1001">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">&nbsp;</label>
+                                            <div class="d-grid gap-2">
+                                                <button type="button" class="btn btn-primary">
+                                                    <i class="fas fa-search me-2"></i>Filtrar
+                                                </button>
+                                                <button type="button" class="btn btn-success">
+                                                    <i class="fas fa-download me-2"></i>Exportar CSV
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha/Hora</th>
+                                        <th>Extensión</th>
+                                        <th>IP ESP32</th>
+                                        <th>Acción</th>
+                                        <th>Resultado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2024-01-15 10:30:15</td>
+                                        <td>1001</td>
+                                        <td>192.168.1.123</td>
+                                        <td>ON</td>
+                                        <td><span class="badge badge-success">OK</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2024-01-15 11:45:22</td>
+                                        <td>1002</td>
+                                        <td>192.168.1.123</td>
+                                        <td>ON</td>
+                                        <td><span class="badge badge-danger">ERROR</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2024-01-15 14:20:10</td>
+                                        <td>1001</td>
+                                        <td>192.168.1.123</td>
+                                        <td>ON</td>
+                                        <td><span class="badge badge-info">SIMULATED_OK</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2024-01-15 16:15:33</td>
+                                        <td>1003</td>
+                                        <td>192.168.1.123</td>
+                                        <td>ON</td>
+                                        <td><span class="badge badge-warning">UNAUTHORIZED</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                    <!-- Tab Extensions -->
+                    <div id="extensions" class="tab-content" style="display:none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <div class="icon-wrapper me-3">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    Extensiones Autorizadas
+                                </h3>
+                            </div>
+                        <div class="card-body">
+                            <div class="filter-section">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-plus-circle me-2"></i>Agregar Nueva Extensión
+                                </h5>
+                                <form class="mb-0">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-phone me-2"></i>Extensión:
+                                            </label>
+                                            <input type="text" class="form-control" placeholder="Ej: 1004" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-tag me-2"></i>Descripción:
+                                            </label>
+                                            <input type="text" class="form-control" placeholder="Ej: Usuario Nuevo">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-clock me-2"></i>Hora Inicio:
+                                            </label>
+                                            <input type="time" class="form-control" id="horaInicio" value="00:00">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-clock me-2"></i>Hora Fin:
+                                            </label>
+                                            <input type="time" class="form-control" id="horaFin" value="23:59">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-globe me-2"></i>Opciones:
+                                            </label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="pstnCheck">
+                                                <label class="form-check-label" for="pstnCheck">PSTN</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="activeCheck" checked>
+                                                <label class="form-check-label" for="activeCheck">Activo</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-calendar me-2"></i>Días de la semana:
+                                            </label>
+                                            <div class="d-flex gap-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia0" checked>
+                                                    <label class="form-check-label" for="dia0">Dom</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia1" checked>
+                                                    <label class="form-check-label" for="dia1">Lun</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia2" checked>
+                                                    <label class="form-check-label" for="dia2">Mar</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia3" checked>
+                                                    <label class="form-check-label" for="dia3">Mié</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia4" checked>
+                                                    <label class="form-check-label" for="dia4">Jue</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia5" checked>
+                                                    <label class="form-check-label" for="dia5">Vie</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dia6">
+                                                    <label class="form-check-label" for="dia6">Sáb</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-10">
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-success">
+                                                    <i class="fas fa-plus me-2"></i>Agregar
+                                                </button>
+                                                <button type="button" class="btn btn-secondary" style="display:none;" id="cancelEdit" onclick="cancelEdit()">
+                                                    <i class="fas fa-times me-1"></i>Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Extensión</th>
+                                        <th>Descripción</th>
+                                        <th>Horario</th>
+                                        <th>Días</th>
+                                        <th>Estado</th>
+                                        <th>PSTN</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1001</td>
+                                        <td>Extensión Admin</td>
+                                        <td><small>00:00 - 23:59</small></td>
+                                        <td><small>LMXJVSD</small></td>
+                                        <td><span class="badge badge-success">Activo</span></td>
+                                        <td><span class="badge badge-info">Sí</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary me-1" onclick="editExtension(1, '1001', 'Extensión Admin', '00:00', '23:59', true, true, '1111111')">
+                                                <i class="fas fa-edit me-1"></i>Editar
+                                            </button>
+                                            <button class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash me-1"></i>Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>1002</td>
+                                        <td>Extensión Usuario 1</td>
+                                        <td><small>08:00 - 18:00</small></td>
+                                        <td><small>LMXJV--</small></td>
+                                        <td><span class="badge badge-success">Activo</span></td>
+                                        <td><span class="badge badge-secondary">No</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary me-1" onclick="editExtension(2, '1002', 'Extensión Usuario 1', '08:00', '18:00', false, true, '0111110')">
+                                                <i class="fas fa-edit me-1"></i>Editar
+                                            </button>
+                                            <button class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash me-1"></i>Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>1003</td>
+                                        <td>Extensión Usuario 2</td>
+                                        <td><small>09:00 - 17:00</small></td>
+                                        <td><small>LMXJV--</small></td>
+                                        <td><span class="badge badge-secondary">Inactivo</span></td>
+                                        <td><span class="badge badge-secondary">No</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary me-1" onclick="editExtension(3, '1003', 'Extensión Usuario 2', '09:00', '17:00', false, false, '0111110')">
+                                                <i class="fas fa-edit me-1"></i>Editar
+                                            </button>
+                                            <button class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash me-1"></i>Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                    <!-- Tab Config -->
+                    <div id="config" class="tab-content" style="display:none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <div class="icon-wrapper me-3">
+                                        <i class="fas fa-cog"></i>
+                                    </div>
+                                    Configuración del Módulo
+                                </h3>
+                            </div>
+                        <div class="card-body">
+                            <form>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">
+                                            <i class="fas fa-network-wired me-2"></i>Configuración de Red
+                                        </h5>
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-server me-2"></i>IP del ESP32:
+                                            </label>
+                                            <input type="text" class="form-control" value="192.168.1.123" required>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-plug me-2"></i>Puerto:
+                                            </label>
+                                            <input type="number" class="form-control" value="80" required>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-phone-alt me-2"></i>Extensión objetivo:
+                                            </label>
+                                            <input type="text" class="form-control" value="8000" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">
+                                            <i class="fas fa-shield-alt me-2"></i>Seguridad y Opciones
+                                        </h5>
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-key me-2"></i>Token (opcional):
+                                            </label>
+                                            <input type="password" class="form-control" value="mi_token_secreto">
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-clock me-2"></i>Timeout (segundos):
+                                            </label>
+                                            <input type="number" class="form-control" value="5" required>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="simMode" checked>
+                                                <label class="form-check-label fw-semibold" for="simMode">
+                                                    <i class="fas fa-flask me-2"></i>Modo simulación
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-4">
+                                    <button type="button" class="btn btn-primary btn-lg px-5">
+                                        <i class="fas fa-save me-2"></i>Guardar Configuración
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).style.display = 'block';
+            event.target.classList.add('active');
+        }
+        
+        function editExtension(id, extension, description, horaInicio, horaFin, pstn, active, dias) {
+            document.querySelector('input[placeholder="Ej: 1004"]').value = extension;
+            document.querySelector('input[placeholder="Ej: Usuario Nuevo"]').value = description;
+            document.querySelector('#horaInicio').value = horaInicio;
+            document.querySelector('#horaFin').value = horaFin;
+            document.querySelector('#pstnCheck').checked = pstn;
+            document.querySelector('#activeCheck').checked = active;
+            
+            // Configurar días
+            const diasArray = dias.split('');
+            for(let i = 0; i < 7; i++) {
+                document.querySelector('#dia' + i).checked = diasArray[i] === '1';
+            }
+            
+            const submitBtn = document.querySelector('.btn-success');
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Actualizar';
+            submitBtn.className = 'btn btn-primary';
+            document.getElementById('cancelEdit').style.display = 'block';
+        }
+        
+        function cancelEdit() {
+            document.querySelector('input[placeholder="Ej: 1004"]').value = '';
+            document.querySelector('input[placeholder="Ej: Usuario Nuevo"]').value = '';
+            document.querySelector('#horaInicio').value = '00:00';
+            document.querySelector('#horaFin').value = '23:59';
+            document.querySelector('#pstnCheck').checked = false;
+            document.querySelector('#activeCheck').checked = true;
+            
+            // Resetear días (L-V activos por defecto)
+            for(let i = 0; i < 7; i++) {
+                document.querySelector('#dia' + i).checked = (i >= 1 && i <= 5);
+            }
+            
+            const submitBtn = document.querySelector('.btn-primary');
+            submitBtn.innerHTML = '<i class="fas fa-plus me-2"></i>Agregar';
+            submitBtn.className = 'btn btn-success';
+            document.getElementById('cancelEdit').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
