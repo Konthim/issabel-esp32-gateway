@@ -157,6 +157,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 📦 Releases
 
+- **v1.1.0** - Interfaz completa con pestañas, documentación de instalación
 - **v1.0.0** - Release inicial con todas las funcionalidades
 
 ## 📞 Soporte

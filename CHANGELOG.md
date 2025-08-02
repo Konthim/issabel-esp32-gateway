@@ -1,5 +1,29 @@
 # 📋 CHANGELOG
 
+## [1.1.0] - 2024-08-02
+
+### ✨ Nuevas Características
+- Interfaz completa con 3 pestañas (Extensiones, Configuración, Logs)
+- Formulario avanzado para configuración del sistema
+- Visualización completa de logs de auditoría
+- Selección de días de la semana por extensión
+- Configuración de horarios personalizados
+- Modo simulación configurable desde interfaz
+- Documentación completa de instalación
+
+### 🔧 Mejoras Técnicas
+- Integración completa con sistema de menús de Issabel 5
+- Registro automático en ACL y base de datos de menús
+- Interfaz responsive con Bootstrap 5
+- Manejo mejorado de formularios y validaciones
+- Sistema de pestañas dinámico
+
+### 📚 Documentación
+- Guía paso a paso de instalación completa
+- Instrucciones específicas para Issabel 5
+- Solución de problemas comunes
+- Verificación de instalación
+
 ## [1.0.0] - 2024-01-15
 
 ### ✨ Características Principales

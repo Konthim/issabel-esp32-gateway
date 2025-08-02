@@ -1,12 +1,12 @@
 #!/bin/bash
 
-echo "Instalando módulo ESP32 Relay Control para Issabel..."
+echo "Instalando módulo ESP32 Relay Control para Issabel 5..."
 
 # Crear directorio del módulo
-mkdir -p /var/www/html/admin/modules/esp32_relay
+mkdir -p /var/www/html/modules/esp32_relay
 
-# Copiar archivos web
-cp -r web/* /var/www/html/admin/modules/esp32_relay/
+# Copiar archivos del módulo
+cp -r esp32_relay/* /var/www/html/modules/esp32_relay/
 
 # Copiar script AGI
 cp agi/esp32_relay_control.php /var/lib/asterisk/agi-bin/
@@ -16,15 +16,13 @@ chown asterisk:asterisk /var/lib/asterisk/agi-bin/esp32_relay_control.php
 # Instalar base de datos
 mysql -u root -peLaStIx.2oo7 asterisk < sql/install.sql
 
-# Registrar módulo en Issabel
-mysql -u root -peLaStIx.2oo7 asterisk -e "
-INSERT IGNORE INTO acl_resource (id, description) VALUES (NULL, 'esp32_relay');
-INSERT IGNORE INTO acl_resource_group (id, id_resource, id_group) 
-SELECT NULL, r.id, 1 FROM acl_resource r WHERE r.description = 'esp32_relay';
-"
+# Registrar módulo en Issabel 5
+sqlite3 /var/www/db/acl.db "INSERT OR IGNORE INTO acl_resource (name, description) VALUES ('esp32_relay', 'ESP32 Relay Control');"
+sqlite3 /var/www/db/menu.db "INSERT OR IGNORE INTO menu (id, IdParent, Link, Name, Type, order_no) VALUES ('esp32_relay', 'pbx', '', 'ESP32 Relay Control', 'module', 999);"
 
-# Recargar menús
-/usr/bin/amportal admin reload
+# Asignar permisos
+chown -R asterisk:asterisk /var/www/html/modules/esp32_relay
+chmod -R 755 /var/www/html/modules/esp32_relay
 
 echo "Instalación completada."
 echo ""

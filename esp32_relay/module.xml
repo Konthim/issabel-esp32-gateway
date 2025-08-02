@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+    <modinfo>
+        <name>esp32_relay</name>
+        <version>1.0.2</version>
+        <type>module</type>
+        <category>PBX</category>
+        <description lang="en">ESP32 Relay Control Module</description>
+        <description lang="es">Módulo de Control de Relé ESP32</description>
+        <depends>
+            <version>5.0.0</version>
+        </depends>
+    </modinfo>
+    <menulist>
+        <menu id="esp32_relay" desc="ESP32 Relay Control" parent="pbxconfig" link="?menu=esp32_relay" order="999">
+            <permissions>
+                <group id="administrator" desc="Administrators" />
+            </permissions>
+        </menu>
+    </menulist>
+</module>
