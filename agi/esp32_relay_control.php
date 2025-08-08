@@ -7,7 +7,7 @@ require_once('/var/www/html/libs/paloSantoDB.class.php');
 $arrConfig = array(
     'host' => 'localhost',
     'user' => 'root',
-    'password' => 'eLaStIx.2oo7',
+    'password' => 'BlackBopys',
     'database' => 'asterisk'
 );
 

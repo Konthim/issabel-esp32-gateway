@@ -14,7 +14,7 @@ chmod +x /var/lib/asterisk/agi-bin/esp32_relay_control.php
 chown asterisk:asterisk /var/lib/asterisk/agi-bin/esp32_relay_control.php
 
 # Instalar base de datos
-mysql -u root -peLaStIx.2oo7 asterisk < sql/install.sql
+mysql -u root -pBlackBopys asterisk < sql/install.sql
 
 # Registrar módulo en Issabel 5
 sqlite3 /var/www/db/acl.db "INSERT OR IGNORE INTO acl_resource (name, description) VALUES ('esp32_relay', 'ESP32 Relay Control');"

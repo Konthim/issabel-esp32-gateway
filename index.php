@@ -1,13 +1,14 @@
 <?php
-require_once "libs/paloSantoDB.class.php";
-
 function _moduleContent(&$smarty, $module_name)
 {
-    global $arrConfig;
-    $pDB = new paloDB($arrConfig['cadena_dsn']);
+    $message = '';
+    $mysqli = new mysqli('localhost', 'root', 'BlackBopys', 'asterisk');
+    
+    if ($mysqli->connect_error) {
+        return '<h1>ESP32 Relay Control</h1><p>Error conexión: ' . $mysqli->connect_error . '</p>';
+    }
     
     // Procesar formularios
-    $message = '';
     if (isset($_POST['action'])) {
         switch($_POST['action']) {
             case 'add_extension':
@@ -21,9 +22,15 @@ function _moduleContent(&$smarty, $module_name)
                     $dias .= isset($_POST['dia'.$i]) ? '1' : '0';
                 }
                 
-                $sql = "INSERT INTO esp32_authorized_extensions (extension, descripcion, allow_pstn, hora_inicio, hora_fin, dias_semana) VALUES (?, ?, ?, ?, ?, ?)";
-                $pDB->genQuery($sql, array($ext, $desc, $pstn, $hora_inicio, $hora_fin, $dias));
-                $message = "Extensión agregada correctamente";
+                $stmt = $mysqli->prepare("INSERT INTO esp32_authorized_extensions (extension, descripcion, allow_pstn, hora_inicio, hora_fin, dias_semana) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssisss", $ext, $desc, $pstn, $hora_inicio, $hora_fin, $dias);
+                
+                if ($stmt->execute()) {
+                    $message = "Extensión agregada correctamente";
+                } else {
+                    $message = "Error: " . $stmt->error;
+                }
+                $stmt->close();
                 break;
                 
             case 'save_config':
@@ -36,25 +43,49 @@ function _moduleContent(&$smarty, $module_name)
                     array('simulation_mode', isset($_POST['simulation_mode']) ? '1' : '0')
                 );
                 
+                $success = true;
                 foreach($configs as $config) {
-                    $pDB->genQuery("INSERT INTO esp32_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?", 
-                                   array($config[0], $config[1], $config[1]));
+                    $stmt = $mysqli->prepare("INSERT INTO esp32_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
+                    $stmt->bind_param("sss", $config[0], $config[1], $config[1]);
+                    if (!$stmt->execute()) {
+                        $success = false;
+                        break;
+                    }
+                    $stmt->close();
                 }
-                $message = "Configuración guardada correctamente";
+                
+                $message = $success ? "Configuración guardada correctamente" : "Error al guardar configuración";
                 break;
         }
     }
     
     // Obtener datos
-    $extensions = $pDB->fetchTable("SELECT * FROM esp32_authorized_extensions ORDER BY extension");
-    $logs = $pDB->fetchTable("SELECT * FROM esp32_access_log ORDER BY fecha_hora DESC LIMIT 20");
+    $extensions = array();
+    $result = $mysqli->query("SELECT * FROM esp32_authorized_extensions ORDER BY extension");
+    if ($result) {
+        while ($row = $result->fetch_array()) {
+            $extensions[] = $row;
+        }
+    }
+    
+    $logs = array();
+    $result = $mysqli->query("SELECT * FROM esp32_access_log ORDER BY fecha_hora DESC LIMIT 20");
+    if ($result) {
+        while ($row = $result->fetch_array()) {
+            $logs[] = $row;
+        }
+    }
     
     // Obtener configuración
-    $config_data = $pDB->fetchTable("SELECT config_key, config_value FROM esp32_config");
     $config = array();
-    foreach($config_data as $row) {
-        $config[$row[0]] = $row[1];
+    $result = $mysqli->query("SELECT config_key, config_value FROM esp32_config");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $config[$row['config_key']] = $row['config_value'];
+        }
     }
+    
+    $mysqli->close();
     
     $content = '
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

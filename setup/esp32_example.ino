@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-const char* ssid = "TU_WIFI_SSID";
-const char* password = "TU_WIFI_PASSWORD";
+const char* ssid = "IoT";
+const char* password = "anitalahuerfanita";
 const char* token = "mi_token_secreto"; // Opcional
 
 const int relayPin = 2; // Pin GPIO para el relé
