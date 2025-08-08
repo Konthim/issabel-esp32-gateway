@@ -1,10 +1,10 @@
-# 🔌 ESP32 Relay Control Module para Issabel 5
+# 🔌 Issabel ESP32 Gateway
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/usuario/esp32-relay-issabel)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/usuario/issabel-esp32-gateway)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Issabel](https://img.shields.io/badge/Issabel-5.x-orange.svg)](https://www.issabel.org/)
 
-Módulo profesional para controlar relés ESP32 mediante llamadas telefónicas en Issabel PBX.
+Gateway profesional para controlar dispositivos ESP32 mediante llamadas telefónicas en Issabel PBX.
 
 ## ✨ Características Principales
 
@@ -22,8 +22,8 @@ Módulo profesional para controlar relés ESP32 mediante llamadas telefónicas e
 ### 1. Descargar el módulo
 ```bash
 cd /tmp
-git clone https://github.com/usuario/esp32-relay-issabel.git
-cd esp32-relay-issabel
+git clone https://github.com/usuario/issabel-esp32-gateway.git
+cd issabel-esp32-gateway
 ```
 
 ### 2. Configurar dialplan
@@ -163,7 +163,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ## 📞 Soporte
 
 Para soporte técnico:
-- 📝 [Issues en GitHub](https://github.com/usuario/esp32-relay-issabel/issues)
+- 📝 [Issues en GitHub](https://github.com/usuario/issabel-esp32-gateway/issues)
 - 📊 Logs de Asterisk: `/var/log/asterisk/full`
 - 📊 Logs del módulo en tabla `esp32_access_log`
 - 🌐 Estado ESP32: `http://IP_ESP32/status`

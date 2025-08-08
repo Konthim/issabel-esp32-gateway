@@ -2,8 +2,8 @@
 
 ## 1. Crear repositorio en GitHub
 1. Ve a https://github.com/new
-2. Nombre: `esp32-relay-issabel`
-3. Descripción: `Módulo ESP32 Relay Control para Issabel PBX`
+2. Nombre: `issabel-esp32-gateway`
+3. Descripción: `🔌 Gateway ESP32 para control de relés via llamadas telefónicas en Issabel PBX`
 4. Público/Privado según prefieras
 5. NO inicializar con README (ya tenemos uno)
 
@@ -12,7 +12,7 @@
 cd /var/www/html/modules/esp32-relay-issabel
 
 # Agregar remote origin (reemplaza TU_USUARIO)
-git remote add origin https://github.com/TU_USUARIO/esp32-relay-issabel.git
+git remote add origin https://github.com/TU_USUARIO/issabel-esp32-gateway.git
 
 # Subir código y tags
 git push -u origin main
