@@ -33,6 +33,43 @@ function _moduleContent(&$smarty, $module_name)
                 $stmt->close();
                 break;
                 
+            case 'edit_extension':
+                $id = $_POST['id'];
+                $ext = $_POST['extension'];
+                $desc = $_POST['descripcion'];
+                $pstn = isset($_POST['allow_pstn']) ? 1 : 0;
+                $activo = isset($_POST['activo']) ? 1 : 0;
+                $hora_inicio = $_POST['hora_inicio'] ?: '00:00:00';
+                $hora_fin = $_POST['hora_fin'] ?: '23:59:59';
+                $dias = '';
+                for($i = 0; $i < 7; $i++) {
+                    $dias .= isset($_POST['dia'.$i]) ? '1' : '0';
+                }
+                
+                $stmt = $mysqli->prepare("UPDATE esp32_authorized_extensions SET extension=?, descripcion=?, allow_pstn=?, activo=?, hora_inicio=?, hora_fin=?, dias_semana=? WHERE id=?");
+                $stmt->bind_param("ssiisssi", $ext, $desc, $pstn, $activo, $hora_inicio, $hora_fin, $dias, $id);
+                
+                if ($stmt->execute()) {
+                    $message = "Extensión actualizada correctamente";
+                } else {
+                    $message = "Error: " . $stmt->error;
+                }
+                $stmt->close();
+                break;
+                
+            case 'delete_extension':
+                $id = $_POST['id'];
+                $stmt = $mysqli->prepare("DELETE FROM esp32_authorized_extensions WHERE id = ?");
+                $stmt->bind_param("i", $id);
+                
+                if ($stmt->execute()) {
+                    $message = "Extensión eliminada correctamente";
+                } else {
+                    $message = "Error: " . $stmt->error;
+                }
+                $stmt->close();
+                break;
+                
             case 'save_config':
                 $configs = array(
                     array('esp32_ip', $_POST['esp32_ip']),
@@ -66,6 +103,18 @@ function _moduleContent(&$smarty, $module_name)
         while ($row = $result->fetch_array()) {
             $extensions[] = $row;
         }
+    }
+    
+    // Obtener extensión para editar
+    $edit_ext = null;
+    if (isset($_GET['edit'])) {
+        $edit_id = $_GET['edit'];
+        $stmt = $mysqli->prepare("SELECT * FROM esp32_authorized_extensions WHERE id = ?");
+        $stmt->bind_param("i", $edit_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $edit_ext = $result->fetch_array();
+        $stmt->close();
     }
     
     $logs = array();
@@ -134,75 +183,65 @@ function _moduleContent(&$smarty, $module_name)
         <div id="extensions" class="tab-content">
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Agregar Nueva Extensión</h5>
+                    <h5 class="mb-0"><i class="fas fa-' . ($edit_ext ? 'edit' : 'plus') . ' me-2"></i>' . ($edit_ext ? 'Editar' : 'Agregar Nueva') . ' Extensión</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        <input type="hidden" name="action" value="add_extension">
+                        <input type="hidden" name="action" value="' . ($edit_ext ? 'edit_extension' : 'add_extension') . '">
+                        ' . ($edit_ext ? '<input type="hidden" name="id" value="' . $edit_ext[0] . '">' : '') . '
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label">Extensión:</label>
-                                <input type="text" name="extension" class="form-control" required>
+                                <input type="text" name="extension" class="form-control" value="' . ($edit_ext ? htmlspecialchars($edit_ext[1]) : '') . '" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Descripción:</label>
-                                <input type="text" name="descripcion" class="form-control">
+                                <input type="text" name="descripcion" class="form-control" value="' . ($edit_ext ? htmlspecialchars($edit_ext[2]) : '') . '">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Hora Inicio:</label>
-                                <input type="time" name="hora_inicio" class="form-control" value="00:00">
+                                <input type="time" name="hora_inicio" class="form-control" value="' . ($edit_ext ? substr($edit_ext[5], 0, 5) : '00:00') . '">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Hora Fin:</label>
-                                <input type="time" name="hora_fin" class="form-control" value="23:59">
+                                <input type="time" name="hora_fin" class="form-control" value="' . ($edit_ext ? substr($edit_ext[6], 0, 5) : '23:59') . '">
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-12">
                                 <label class="form-label">Días de la semana:</label>
-                                <div class="d-flex gap-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia0" id="dia0">
-                                        <label class="form-check-label" for="dia0">Dom</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia1" id="dia1" checked>
-                                        <label class="form-check-label" for="dia1">Lun</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia2" id="dia2" checked>
-                                        <label class="form-check-label" for="dia2">Mar</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia3" id="dia3" checked>
-                                        <label class="form-check-label" for="dia3">Mié</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia4" id="dia4" checked>
-                                        <label class="form-check-label" for="dia4">Jue</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia5" id="dia5" checked>
-                                        <label class="form-check-label" for="dia5">Vie</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="dia6" id="dia6">
-                                        <label class="form-check-label" for="dia6">Sáb</label>
-                                    </div>
-                                </div>
+                                <div class="d-flex gap-3">';
+                                
+    $dias_edit = $edit_ext ? str_split($edit_ext[7] ?: '1111100') : array('0','1','1','1','1','1','0');
+    $dias_nombres = array('Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb');
+    
+    for($i = 0; $i < 7; $i++) {
+        $checked = $dias_edit[$i] == '1' ? 'checked' : '';
+        $content .= '<div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="dia'.$i.'" id="dia'.$i.'" '.$checked.'>
+                        <label class="form-check-label" for="dia'.$i.'">'.$dias_nombres[$i].'</label>
+                    </div>';
+    }
+    
+    $content .= '</div>
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="allow_pstn" id="pstn">
+                                    <input class="form-check-input" type="checkbox" name="allow_pstn" id="pstn" ' . ($edit_ext && $edit_ext[4] ? 'checked' : '') . '>
                                     <label class="form-check-label" for="pstn">Permitir PSTN</label>
                                 </div>
+                                ' . ($edit_ext ? '<div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" name="activo" id="activo" ' . ($edit_ext[3] ? 'checked' : '') . '>
+                                    <label class="form-check-label" for="activo">Activo</label>
+                                </div>' : '') . '
                             </div>
                             <div class="col-md-6">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-plus me-2"></i>Agregar Extensión
+                                <button type="submit" class="btn btn-' . ($edit_ext ? 'primary' : 'success') . '">
+                                    <i class="fas fa-' . ($edit_ext ? 'save' : 'plus') . ' me-2"></i>' . ($edit_ext ? 'Actualizar' : 'Agregar') . ' Extensión
                                 </button>
+                                ' . ($edit_ext ? '<a href="?" class="btn btn-secondary ms-2">Cancelar</a>' : '') . '
                             </div>
                         </div>
                     </form>
@@ -223,6 +262,7 @@ function _moduleContent(&$smarty, $module_name)
                                 <th>Días</th>
                                 <th>PSTN</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>';
@@ -243,10 +283,18 @@ function _moduleContent(&$smarty, $module_name)
                 <td><small>' . $dias_str . '</small></td>
                 <td>' . ($ext[4] ? '<span class="badge badge-info">Sí</span>' : '<span class="badge badge-secondary">No</span>') . '</td>
                 <td>' . ($ext[3] ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-secondary">Inactivo</span>') . '</td>
+                <td>
+                    <a href="?edit=' . $ext[0] . '" class="btn btn-sm btn-outline-primary me-1">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button onclick="deleteExt(' . $ext[0] . ', \'' . htmlspecialchars($ext[1]) . '\')" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>';
         }
     } else {
-        $content .= '<tr><td colspan="6" class="text-center">No hay extensiones configuradas</td></tr>';
+        $content .= '<tr><td colspan="7" class="text-center">No hay extensiones configuradas</td></tr>';
     }
     
     $content .= '
@@ -368,6 +416,16 @@ function _moduleContent(&$smarty, $module_name)
             
             document.getElementById(tabName).style.display = "block";
             event.target.classList.add("active");
+        }
+        
+        function deleteExt(id, extension) {
+            if (confirm(\'¿Está seguro de eliminar la extensión \' + extension + \'?\')) {
+                const form = document.createElement(\'form\');
+                form.method = \'POST\';
+                form.innerHTML = \'<input type="hidden" name="action" value="delete_extension"><input type="hidden" name="id" value="\' + id + \'">\';
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
     </script>';
     
