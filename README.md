@@ -12,6 +12,8 @@ Gateway profesional para controlar dispositivos ESP32 mediante llamadas telefón
 - 🔒 **Seguridad avanzada**: Lista blanca de extensiones con control de horarios
 - 📞 **Soporte PSTN**: Permite activación desde llamadas externas
 - 🕐 **Control temporal**: Horarios y días de la semana configurables
+- ✏️ **Gestión completa**: Agregar, editar y eliminar extensiones autorizadas
+- 📅 **Validación automática**: Bloqueo por días no autorizados
 - 📊 **Auditoría completa**: Logs detallados con exportación CSV
 - 🎨 **Interfaz moderna**: Dashboard responsive con Bootstrap 5
 - 🧪 **Modo prueba**: Simulación sin afectar hardware
@@ -52,17 +54,21 @@ asterisk -rx "dialplan reload"
 ## Uso del Módulo
 
 ### Activación del Relé
-1. Marcar **8000** desde cualquier extensión
-2. Escuchar "Ingrese código de acceso"
-3. Ingresar **100** (3 dígitos)
-4. El sistema envía comando HTTP al ESP32
-5. Confirmación: "Código aceptado"
+1. Marcar **8000** desde una extensión autorizada
+2. **Validación automática**: El sistema verifica si la extensión está autorizada y si es un día permitido
+3. Si no está autorizada o no es el día correcto: la llamada se cuelga automáticamente
+4. Si está autorizada: escuchar "Ingrese código de acceso"
+5. Ingresar **100** (3 dígitos)
+6. El sistema envía comando HTTP al ESP32
+7. Confirmación: "Código aceptado"
 
 ### Características
+- ✅ Validación automática por extensión y día de la semana
 - ✅ Máximo 3 intentos de clave
 - ✅ Timeout de 10 segundos por intento
-- ✅ Control directo sin base de datos
+- ✅ Gestión completa de extensiones desde interfaz web
 - ✅ Clave fija "100" para simplicidad
+- ✅ Bloqueo automático en días no autorizados
 
 ## Estructura de Archivos
 
@@ -98,7 +104,14 @@ modulo-Issabel/
 - Configuración del módulo (IP, puerto, token, etc.)
 
 ### esp32_authorized_extensions
-- Lista de extensiones autorizadas
+- `id`: ID autoincremental
+- `extension`: Número de extensión autorizada
+- `descripcion`: Descripción de la extensión
+- `activo`: Estado activo/inactivo (1/0)
+- `allow_pstn`: Permite llamadas PSTN (1/0)
+- `hora_inicio`: Hora de inicio permitida (HH:MM:SS)
+- `hora_fin`: Hora de fin permitida (HH:MM:SS)
+- `dias_semana`: Días permitidos (7 dígitos: 0=domingo, 1=lunes, etc.)
 
 ## Configuración Avanzada
 
@@ -154,6 +167,12 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 📦 Releases
 
+- **v1.2.0** - Gestión completa de extensiones y validación por días
+  - ✅ Interfaz web para agregar, editar y eliminar extensiones
+  - ✅ Validación automática por días de la semana
+  - ✅ Bloqueo automático de llamadas no autorizadas
+  - ✅ Mensajes informativos y confirmaciones
+  - ✅ Botones con iconos y mejor UX
 - **v1.1.0** - Versión con validación de clave 100 y control directo ESP32
   - ✅ Dialplan simplificado con clave fija "100"
   - ✅ Control directo via HTTP al ESP32
