@@ -19,32 +19,27 @@ Módulo profesional para controlar relés ESP32 mediante llamadas telefónicas e
 
 ## 🚀 Instalación Rápida
 
-### 1. Preparar archivos
+### 1. Descargar el módulo
 ```bash
 cd /tmp
-# Copiar los archivos del módulo a este directorio
+git clone https://github.com/usuario/esp32-relay-issabel.git
+cd esp32-relay-issabel
 ```
 
-### 2. Ejecutar instalación
+### 2. Configurar dialplan
 ```bash
-chmod +x setup/install.sh
-./setup/install.sh
+cp setup/extensions_custom.conf /etc/asterisk/extensions_custom.conf
 ```
 
-### 3. Configurar dialplan
-Agregar al archivo `/etc/asterisk/extensions_custom.conf`:
-```
-[from-internal-custom]
-exten => 8000,1,NoOp(ESP32 Relay Control - Caller: ${CALLERID(num)})
-exten => 8000,n,AGI(/var/lib/asterisk/agi-bin/esp32_relay_control.php)
-exten => 8000,n,Playback(beep)
-exten => 8000,n,Hangup()
-```
-
-### 4. Recargar configuración
+### 3. Recargar configuración
 ```bash
-amportal reload
+asterisk -rx "dialplan reload"
 ```
+
+### 4. Configurar ESP32
+- Cargar `setup/esp32_example.ino`
+- IP: 192.168.1.26
+- Token: mi_token_secreto
 
 ## Configuración ESP32
 
@@ -55,17 +50,18 @@ amportal reload
 
 ## Uso del Módulo
 
-### Acceso Web
-- Ir a: **PBX → Control Relé ESP32**
-- Configurar IP del ESP32 y extensión objetivo
-- Agregar extensiones autorizadas
-- Revisar logs de auditoría
-
 ### Activación del Relé
-1. Desde una extensión autorizada, marcar **8000**
-2. El sistema valida la autorización
-3. Envía comando HTTP al ESP32
-4. Registra la acción en el log
+1. Marcar **8000** desde cualquier extensión
+2. Escuchar "Ingrese código de acceso"
+3. Ingresar **100** (3 dígitos)
+4. El sistema envía comando HTTP al ESP32
+5. Confirmación: "Código aceptado"
+
+### Características
+- ✅ Máximo 3 intentos de clave
+- ✅ Timeout de 10 segundos por intento
+- ✅ Control directo sin base de datos
+- ✅ Clave fija "100" para simplicidad
 
 ## Estructura de Archivos
 
@@ -157,7 +153,11 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 📦 Releases
 
-- **v1.1.0** - Interfaz completa con pestañas, documentación de instalación
+- **v1.1.0** - Versión con validación de clave 100 y control directo ESP32
+  - ✅ Dialplan simplificado con clave fija "100"
+  - ✅ Control directo via HTTP al ESP32
+  - ✅ Máximo 3 intentos de autenticación
+  - ✅ Guía de instalación actualizada
 - **v1.0.0** - Release inicial con todas las funcionalidades
 
 ## 📞 Soporte
