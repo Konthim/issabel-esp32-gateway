@@ -27,6 +27,7 @@ cd issabel-esp32-gateway
 ```
 
 ### 2. Configurar dialplan
+**IMPORTANTE**: El archivo que Asterisk lee es `/etc/asterisk/extensions_custom.conf`
 ```bash
 cp setup/extensions_custom.conf /etc/asterisk/extensions_custom.conf
 ```

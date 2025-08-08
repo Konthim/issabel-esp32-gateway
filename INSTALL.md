@@ -16,9 +16,13 @@ chmod +x setup/install.sh
 ```
 
 ### 3. Configurar dialplan
-Copiar la configuración al archivo de Asterisk:
+**IMPORTANTE**: Editar directamente el archivo de Asterisk (NO el del módulo):
 ```bash
+# Opción 1: Copiar desde el módulo
 cp setup/extensions_custom.conf /etc/asterisk/extensions_custom.conf
+
+# Opción 2: Editar directamente
+nano /etc/asterisk/extensions_custom.conf
 ```
 
 ### 4. Recargar configuración
@@ -76,7 +80,7 @@ curl "http://192.168.1.26/on?token=mi_token_secreto"
 ## 🛠️ Personalización
 
 ### Cambiar clave
-Editar en `/etc/asterisk/extensions_custom.conf`:
+**IMPORTANTE**: Editar en `/etc/asterisk/extensions_custom.conf` (NO en setup/)
 ```
 GotoIf($["${codigo}" = "TU_NUEVA_CLAVE"]?correcto:incorrecto)
 ```
