@@ -93,6 +93,30 @@ function _moduleContent(&$smarty, $module_name)
                 
                 $message = $success ? "Configuración guardada correctamente" : "Error al guardar configuración";
                 break;
+                
+            case 'block_extension':
+                $ext = $_POST['extension'];
+                $stmt = $mysqli->prepare("UPDATE esp32_authorized_extensions SET activo = 0 WHERE extension = ?");
+                $stmt->bind_param("s", $ext);
+                if ($stmt->execute()) {
+                    $message = "Extensión $ext bloqueada correctamente";
+                } else {
+                    $message = "Error al bloquear extensión";
+                }
+                $stmt->close();
+                break;
+                
+            case 'unblock_extension':
+                $ext = $_POST['extension'];
+                $stmt = $mysqli->prepare("UPDATE esp32_authorized_extensions SET activo = 1 WHERE extension = ?");
+                $stmt->bind_param("s", $ext);
+                if ($stmt->execute()) {
+                    $message = "Extensión $ext desbloqueada correctamente";
+                } else {
+                    $message = "Error al desbloquear extensión";
+                }
+                $stmt->close();
+                break;
         }
     }
     
@@ -117,8 +141,46 @@ function _moduleContent(&$smarty, $module_name)
         $stmt->close();
     }
     
+    // Filtros para logs
+    $date_from = $_GET['date_from'] ?? '';
+    $date_to = $_GET['date_to'] ?? '';
+    $extension_filter = $_GET['extension_filter'] ?? '';
+    $resultado_filter = $_GET['resultado_filter'] ?? '';
+    
+    $where_conditions = array();
+    $params = array();
+    
+    if ($date_from) {
+        $where_conditions[] = "fecha_hora >= ?";
+        $params[] = $date_from . ' 00:00:00';
+    }
+    if ($date_to) {
+        $where_conditions[] = "fecha_hora <= ?";
+        $params[] = $date_to . ' 23:59:59';
+    }
+    if ($extension_filter) {
+        $where_conditions[] = "extension_llamante = ?";
+        $params[] = $extension_filter;
+    }
+    if ($resultado_filter) {
+        $where_conditions[] = "resultado = ?";
+        $params[] = $resultado_filter;
+    }
+    
+    $where_clause = empty($where_conditions) ? '' : 'WHERE ' . implode(' AND ', $where_conditions);
+    $query = "SELECT l.*, e.activo FROM esp32_access_log l LEFT JOIN esp32_authorized_extensions e ON l.extension_llamante = e.extension $where_clause ORDER BY l.fecha_hora DESC LIMIT 50";
+    
     $logs = array();
-    $result = $mysqli->query("SELECT * FROM esp32_access_log ORDER BY fecha_hora DESC LIMIT 20");
+    if (empty($params)) {
+        $result = $mysqli->query($query);
+    } else {
+        $stmt = $mysqli->prepare($query);
+        $types = str_repeat('s', count($params));
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    }
+    
     if ($result) {
         while ($row = $result->fetch_array()) {
             $logs[] = $row;
@@ -355,6 +417,45 @@ function _moduleContent(&$smarty, $module_name)
         
         <!-- Tab Logs -->
         <div id="logs" class="tab-content" style="display:none;">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de Búsqueda</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Desde:</label>
+                            <input type="date" name="date_from" class="form-control" value="' . htmlspecialchars($date_from) . '">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Hasta:</label>
+                            <input type="date" name="date_to" class="form-control" value="' . htmlspecialchars($date_to) . '">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Extensión:</label>
+                            <input type="text" name="extension_filter" class="form-control" value="' . htmlspecialchars($extension_filter) . '">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Resultado:</label>
+                            <select name="resultado_filter" class="form-control">
+                                <option value="">Todos los resultados</option>
+                                <option value="APROBADO"' . ($resultado_filter == 'APROBADO' ? ' selected' : '') . '>✅ APROBADO</option>
+                                <option value="DENEGADO"' . ($resultado_filter == 'DENEGADO' ? ' selected' : '') . '>❌ DENEGADO</option>
+                                <option value="NO AUTORIZADO"' . ($resultado_filter == 'NO AUTORIZADO' ? ' selected' : '') . '>🚫 NO AUTORIZADO</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label><br>
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-1"></i>Filtrar
+                            </button>
+                            <a href="?" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-history me-2"></i>Log de Auditoría</h5>
@@ -368,19 +469,59 @@ function _moduleContent(&$smarty, $module_name)
                                 <th>IP ESP32</th>
                                 <th>Acción</th>
                                 <th>Resultado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>';
                         
     if ($logs) {
         foreach($logs as $log) {
-            $badge_class = '';
+            $badge_class = 'badge-secondary';
+            $icon = '';
             switch($log[5]) {
-                case 'OK': $badge_class = 'badge-success'; break;
-                case 'ERROR': $badge_class = 'badge-danger'; break;
-                case 'UNAUTHORIZED': $badge_class = 'badge-warning'; break;
-                case 'SIMULATED_OK': $badge_class = 'badge-info'; break;
-                default: $badge_class = 'badge-secondary';
+                case 'APROBADO':
+                    $badge_class = 'badge-success';
+                    $icon = '✅ ';
+                    break;
+                case 'DENEGADO':
+                    $badge_class = 'badge-danger';
+                    $icon = '❌ ';
+                    break;
+                case 'NO AUTORIZADO':
+                    $badge_class = 'badge-warning';
+                    $icon = '🚫 ';
+                    break;
+                // Mantener compatibilidad con etiquetas antiguas
+                case 'OK': 
+                    $badge_class = 'badge-success';
+                    $icon = '✅ ';
+                    break;
+                case 'UNAUTHORIZED': 
+                    $badge_class = 'badge-warning';
+                    $icon = '🚫 ';
+                    break;
+                case 'FAILED_ATTEMPTS': 
+                    $badge_class = 'badge-danger';
+                    $icon = '❌ ';
+                    break;
+            }
+            
+            $extension = $log[2];
+            $is_active = isset($log[6]) ? $log[6] : null;
+            $action_buttons = '';
+            
+            if ($is_active === '1') {
+                $action_buttons = '<button onclick="blockExtension(\'' . $extension . '\')" class="btn btn-sm btn-outline-danger" title="Bloquear extensión">
+                    <i class="fas fa-ban"></i> Bloquear
+                </button>';
+            } elseif ($is_active === '0') {
+                $action_buttons = '<button onclick="unblockExtension(\'' . $extension . '\')" class="btn btn-sm btn-outline-success" title="Desbloquear extensión">
+                    <i class="fas fa-check"></i> Desbloquear
+                </button>';
+            } else {
+                $action_buttons = '<button onclick="addExtension(\'' . $extension . '\')" class="btn btn-sm btn-outline-primary" title="Agregar extensión">
+                    <i class="fas fa-plus"></i> Agregar
+                </button>';
             }
             
             $content .= '<tr>
@@ -388,11 +529,12 @@ function _moduleContent(&$smarty, $module_name)
                 <td>' . $log[2] . '</td>
                 <td>' . $log[3] . '</td>
                 <td>' . $log[4] . '</td>
-                <td><span class="badge ' . $badge_class . '">' . $log[5] . '</span></td>
+                <td><span class="badge ' . $badge_class . '">' . $icon . $log[5] . '</span></td>
+                <td>' . $action_buttons . '</td>
             </tr>';
         }
     } else {
-        $content .= '<tr><td colspan="5" class="text-center">No hay registros de actividad</td></tr>';
+        $content .= '<tr><td colspan="6" class="text-center">No hay registros de actividad</td></tr>';
     }
     
     $content .= '
@@ -425,6 +567,32 @@ function _moduleContent(&$smarty, $module_name)
                 form.innerHTML = \'<input type="hidden" name="action" value="delete_extension"><input type="hidden" name="id" value="\' + id + \'">\';
                 document.body.appendChild(form);
                 form.submit();
+            }
+        }
+        
+        function blockExtension(extension) {
+            if (confirm(\'¿Está seguro de bloquear la extensión \' + extension + \'?\')) {
+                const form = document.createElement(\'form\');
+                form.method = \'POST\';
+                form.innerHTML = \'<input type="hidden" name="action" value="block_extension"><input type="hidden" name="extension" value="\' + extension + \'">\';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function unblockExtension(extension) {
+            if (confirm(\'¿Está seguro de desbloquear la extensión \' + extension + \'?\')) {
+                const form = document.createElement(\'form\');
+                form.method = \'POST\';
+                form.innerHTML = \'<input type="hidden" name="action" value="unblock_extension"><input type="hidden" name="extension" value="\' + extension + \'">\';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function addExtension(extension) {
+            if (confirm(\'¿Desea agregar la extensión \' + extension + \' a las extensiones autorizadas?\')) {
+                window.location.href = \'?extension_to_add=\' + extension;
             }
         }
     </script>';

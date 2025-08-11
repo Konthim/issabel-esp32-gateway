@@ -30,10 +30,26 @@ function showLogs($smarty, $db, $action) {
         return;
     }
     
+    // Bloquear/Desbloquear extensiones
+    if ($action == 'block' && getParameter('extension')) {
+        $ext = getParameter('extension');
+        $db->genQuery("UPDATE esp32_authorized_extensions SET activo = 0 WHERE extension = ?", array($ext));
+        header("Location: ?menu=" . getParameter('menu') . "&msg=blocked");
+        exit;
+    }
+    
+    if ($action == 'unblock' && getParameter('extension')) {
+        $ext = getParameter('extension');
+        $db->genQuery("UPDATE esp32_authorized_extensions SET activo = 1 WHERE extension = ?", array($ext));
+        header("Location: ?menu=" . getParameter('menu') . "&msg=unblocked");
+        exit;
+    }
+    
     // Filtros
     $date_from = getParameter('date_from');
     $date_to = getParameter('date_to');
     $extension = getParameter('extension_filter');
+    $resultado = getParameter('resultado_filter');
     
     $where = array();
     $params = array();
@@ -50,10 +66,14 @@ function showLogs($smarty, $db, $action) {
         $where[] = "extension_llamante = ?";
         $params[] = $extension;
     }
+    if ($resultado) {
+        $where[] = "resultado = ?";
+        $params[] = $resultado;
+    }
     
     $whereClause = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
     
-    $query = "SELECT * FROM esp32_access_log $whereClause ORDER BY fecha_hora DESC LIMIT 100";
+    $query = "SELECT l.*, e.activo FROM esp32_access_log l LEFT JOIN esp32_authorized_extensions e ON l.extension_llamante = e.extension $whereClause ORDER BY l.fecha_hora DESC LIMIT 100";
     $logs = $db->fetchTable($query, true, $params);
     
     $content .= '
@@ -65,22 +85,32 @@ function showLogs($smarty, $db, $action) {
             <form method="GET" class="mb-3">
                 <input type="hidden" name="menu" value="' . getParameter('menu') . '">
                 <div class="row">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label>Desde:</label>
                         <input type="date" name="date_from" class="form-control" value="' . htmlspecialchars($date_from) . '">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label>Hasta:</label>
                         <input type="date" name="date_to" class="form-control" value="' . htmlspecialchars($date_to) . '">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label>Extensión:</label>
                         <input type="text" name="extension_filter" class="form-control" value="' . htmlspecialchars($extension) . '">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Resultado:</label>
+                        <select name="resultado_filter" class="form-control">
+                            <option value="">Todos los resultados</option>
+                            <option value="APROBADO"' . ($resultado == 'APROBADO' ? ' selected' : '') . '>✅ APROBADO</option>
+                            <option value="DENEGADO"' . ($resultado == 'DENEGADO' ? ' selected' : '') . '>❌ DENEGADO</option>
+                            <option value="NO AUTORIZADO"' . ($resultado == 'NO AUTORIZADO' ? ' selected' : '') . '>🚫 NO AUTORIZADO</option>
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label>&nbsp;</label><br>
                         <button type="submit" class="btn btn-primary">Filtrar</button>
                         <a href="?menu=' . getParameter('menu') . '&action=export" class="btn btn-success">Exportar CSV</a>
+                        <a href="?menu=' . getParameter('menu') . '" class="btn btn-secondary">Limpiar</a>
                     </div>
                 </div>
             </form>
@@ -93,19 +123,53 @@ function showLogs($smarty, $db, $action) {
                         <th>IP ESP32</th>
                         <th>Acción</th>
                         <th>Resultado</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>';
     
     foreach ($logs as $log) {
-        $status_class = $log[5] == 'OK' ? 'success' : ($log[5] == 'SIMULATED_OK' ? 'info' : 'danger');
+        $status_class = 'secondary';
+        $icon = '';
+        switch($log[5]) {
+            case 'APROBADO':
+                $status_class = 'success';
+                $icon = '✅ ';
+                break;
+            case 'DENEGADO':
+                $status_class = 'danger';
+                $icon = '❌ ';
+                break;
+            case 'NO AUTORIZADO':
+                $status_class = 'warning';
+                $icon = '🚫 ';
+                break;
+        }
+        
+        $extension = $log[2];
+        $is_active = isset($log[6]) ? $log[6] : null;
+        $action_buttons = '';
+        
+        if ($is_active === '1') {
+            $action_buttons = '<a href="?menu=' . getParameter('menu') . '&action=block&extension=' . $extension . '" class="btn btn-sm btn-outline-danger" onclick="return confirm(\'¿Está seguro de bloquear la extensión ' . $extension . '?\')" title="Bloquear extensión">
+                <i class="fa fa-ban"></i> Bloquear
+            </a>';
+        } elseif ($is_active === '0') {
+            $action_buttons = '<a href="?menu=' . getParameter('menu') . '&action=unblock&extension=' . $extension . '" class="btn btn-sm btn-outline-success" onclick="return confirm(\'¿Está seguro de desbloquear la extensión ' . $extension . '?\')" title="Desbloquear extensión">
+                <i class="fa fa-check"></i> Desbloquear
+            </a>';
+        } else {
+            $action_buttons = '<span class="text-muted"><small>No registrada</small></span>';
+        }
+        
         $content .= "
                     <tr>
                         <td>{$log[1]}</td>
                         <td>{$log[2]}</td>
                         <td>{$log[3]}</td>
                         <td>{$log[4]}</td>
-                        <td><span class=\"badge badge-{$status_class}\">{$log[5]}</span></td>
+                        <td><span class=\"badge badge-{$status_class}\">{$icon}{$log[5]}</span></td>
+                        <td>{$action_buttons}</td>
                     </tr>";
     }
     
@@ -280,7 +344,7 @@ function showExtensions($smarty, $db) {
             <h3>Extensiones Autorizadas</h3>
         </div>
         <div class="card-body">
-            ' . $alert
+            ' . $alert . '
             <form method="POST" class="mb-3">
                 <input type="hidden" name="action" value="' . ($edit_data ? 'edit' : 'add') . '">
                 ' . ($edit_data ? '<input type="hidden" name="id" value="' . $edit_data[0] . '">' : '') . '

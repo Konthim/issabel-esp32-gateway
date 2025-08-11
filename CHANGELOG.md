@@ -1,56 +1,78 @@
-# 📋 CHANGELOG
+# Changelog - ESP32 Relay Control Module
 
-## [1.1.0] - 2024-08-02
+## [v2.1.0] - 2025-08-11
 
-### ✨ Nuevas Características
-- Interfaz completa con 3 pestañas (Extensiones, Configuración, Logs)
-- Formulario avanzado para configuración del sistema
-- Visualización completa de logs de auditoría
-- Selección de días de la semana por extensión
-- Configuración de horarios personalizados
-- Modo simulación configurable desde interfaz
-- Documentación completa de instalación
+### 🔧 ETIQUETAS DE AUDITORÍA EN ESPAÑOL
+- **Cambio de etiquetas del sistema:**
+  - `OK` → `APROBADO` ✅
+  - `UNAUTHORIZED` → `NO AUTORIZADO` 🚫
+  - `FAILED_ATTEMPTS` → `DENEGADO` ❌
+- **Actualización automática** de logs históricos en base de datos
+- **Iconos visuales distintivos** para cada tipo de resultado
+- **Colores mejorados** en badges de estado para mejor identificación
 
-### 🔧 Mejoras Técnicas
-- Integración completa con sistema de menús de Issabel 5
-- Registro automático en ACL y base de datos de menús
-- Interfaz responsive con Bootstrap 5
-- Manejo mejorado de formularios y validaciones
-- Sistema de pestañas dinámico
+### 🔍 FILTRO AVANZADO EN LOG DE AUDITORÍA
+- **Filtro por rango de fechas:** Desde/Hasta para búsquedas temporales
+- **Filtro por extensión:** Buscar registros de números específicos
+- **Filtro por resultado:** APROBADO/DENEGADO/NO AUTORIZADO
+- **Botón 'Limpiar'** para resetear todos los filtros
+- **Filtros combinables** para búsquedas precisas y detalladas
+- **Implementación dual** en ambos archivos index.php
 
-### 📚 Documentación
-- Guía paso a paso de instalación completa
-- Instrucciones específicas para Issabel 5
-- Solución de problemas comunes
-- Verificación de instalación
+### 🔒 SISTEMA DE BLOQUEO/DESBLOQUEO
+- **Botones de acción directos** en log de auditoría
+- **Bloquear extensiones activas** con un solo clic
+- **Desbloquear extensiones bloqueadas** fácilmente
+- **Confirmaciones de seguridad** para prevenir acciones accidentales
+- **Estados visuales claros:**
+  - 🟢 Activo → Botón "Bloquear"
+  - 🔴 Bloqueado → Botón "Desbloquear"
+  - ⚪ No registrado → Indicador visual
+- **Gestión rápida** sin necesidad de navegar entre pestañas
 
-## [1.0.0] - 2024-01-15
+### ⚡ MEJORAS TÉCNICAS
+- **Consultas SQL optimizadas** con LEFT JOIN para mejor rendimiento
+- **Manejo robusto** de estados de extensiones
+- **JavaScript mejorado** para interacciones fluidas
+- **Interfaz responsive** y moderna con Bootstrap 5
+- **Compatibilidad completa** con etiquetas antiguas y nuevas
 
-### ✨ Características Principales
-- Control de relé ESP32 mediante llamadas telefónicas
-- Sistema de autorización por extensiones
-- Validación de horarios y días de la semana
-- Soporte para llamadas PSTN
-- Interfaz web moderna y responsive
-- Sistema completo de auditoría
-- Modo simulación para pruebas
+### 📊 FUNCIONALIDADES AGREGADAS
+- **Nueva columna 'Acciones'** en tabla de logs
+- **Detección automática** del estado de extensiones
+- **Mensajes de confirmación** y notificaciones de éxito
+- **Límite optimizado** de registros (50-100) para mejor rendimiento
+- **Exportación CSV** que respeta filtros aplicados
 
-### 🔒 Seguridad
-- Lista blanca de extensiones autorizadas
-- Control de horarios de acceso
-- Soporte para token de autenticación
-- Logs detallados de todas las actividades
+### 🎨 MEJORAS DE UX/UI
+- **Iconos Font Awesome** para mejor visualización
+- **Colores distintivos** por tipo de resultado
+- **Layout reorganizado** para mejor aprovechamiento del espacio
+- **Botones intuitivos** con tooltips informativos
+- **Experiencia de usuario** fluida y sin interrupciones
 
-### 🎨 Interfaz
-- Diseño moderno con Bootstrap 5
-- Iconos FontAwesome
-- Formularios intuitivos
-- Tablas con filtros y exportación CSV
-- Espaciado optimizado para más registros
+### 🔄 VALIDACIÓN DE HORARIOS (Versión anterior)
+- Sistema de validación precisa por minutos desde medianoche
+- Consultas MySQL separadas para mayor confiabilidad
+- Comparación exacta de horarios HH:MM:SS
+- Logs detallados para debugging y monitoreo
 
-### 🔧 Técnico
-- Compatible con Issabel 5.x
-- Script AGI en PHP
-- Base de datos MySQL
-- Configuración via dialplan
-- Instalación automatizada
+---
+
+## Archivos Modificados
+- `index.php` - Interfaz principal con nuevas funcionalidades
+- `web/index.php` - Interfaz web con filtros y bloqueo
+- `setup/extensions_custom.conf` - Etiquetas actualizadas
+- `push_to_github.sh` - Script de deployment
+
+## Instalación
+1. Clonar el repositorio
+2. Ejecutar `setup/install.sh`
+3. Configurar base de datos
+4. Recargar dialplan de Asterisk
+
+## Uso
+1. Acceder al módulo desde Issabel Web
+2. Configurar extensiones autorizadas
+3. Usar filtros en Log de Auditoría
+4. Bloquear/Desbloquear extensiones según necesidad
