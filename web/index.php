@@ -5,7 +5,7 @@ require_once "libs/paloSantoDB.class.php";
 require_once "libs/paloSantoConfig.class.php";
 
 function _moduleContent(&$smarty, $module_name) {
-    $db = new paloDB("mysql://root:eLaStIx.2oo7@localhost/asterisk");
+    $db = new paloDB("mysql://root:BlackBopys@localhost/asterisk");
     
     $action = getParameter('action');
     $nav = getParameter('nav');
@@ -196,8 +196,16 @@ function showExtensions($smarty, $db) {
         for($i=0; $i<7; $i++) {
             $dias .= getParameter('dia_'.$i) ? '1' : '0';
         }
+        
+        // Verificar si la extensión ya existe
+        $existing = $db->fetchTable("SELECT id FROM esp32_authorized_extensions WHERE extension = ?", true, array($ext));
+        if ($existing) {
+            header("Location: ?menu=" . getParameter('menu') . "&nav=extensions&msg=exists");
+            exit;
+        }
+        
         $db->genQuery("INSERT INTO esp32_authorized_extensions (extension, descripcion, allow_pstn, hora_inicio, hora_fin, dias_semana) VALUES (?, ?, ?, ?, ?, ?)", array($ext, $desc, $pstn, $hora_inicio, $hora_fin, $dias));
-        header("Location: ?menu=" . getParameter('menu') . "&nav=extensions");
+        header("Location: ?menu=" . getParameter('menu') . "&nav=extensions&msg=added");
         exit;
     }
     
@@ -213,15 +221,29 @@ function showExtensions($smarty, $db) {
         for($i=0; $i<7; $i++) {
             $dias .= getParameter('dia_'.$i) ? '1' : '0';
         }
+        
+        // Verificar si la extensión ya existe (excluyendo la actual)
+        $existing = $db->fetchTable("SELECT id FROM esp32_authorized_extensions WHERE extension = ? AND id != ?", true, array($ext, $id));
+        if ($existing) {
+            header("Location: ?menu=" . getParameter('menu') . "&nav=extensions&edit=$id&msg=exists");
+            exit;
+        }
+        
         $db->genQuery("UPDATE esp32_authorized_extensions SET extension=?, descripcion=?, allow_pstn=?, activo=?, hora_inicio=?, hora_fin=?, dias_semana=? WHERE id=?", array($ext, $desc, $pstn, $activo, $hora_inicio, $hora_fin, $dias, $id));
-        header("Location: ?menu=" . getParameter('menu') . "&nav=extensions");
+        header("Location: ?menu=" . getParameter('menu') . "&nav=extensions&msg=updated");
         exit;
     }
     
     if ($action == 'delete') {
         $id = getParameter('id');
-        $db->genQuery("DELETE FROM esp32_authorized_extensions WHERE id = ?", array($id));
-        header("Location: ?menu=" . getParameter('menu') . "&nav=extensions");
+        $confirm = getParameter('confirm');
+        
+        if ($confirm === 'yes') {
+            $db->genQuery("DELETE FROM esp32_authorized_extensions WHERE id = ?", array($id));
+            header("Location: ?menu=" . getParameter('menu') . "&nav=extensions&msg=deleted");
+        } else {
+            header("Location: ?menu=" . getParameter('menu') . "&nav=extensions");
+        }
         exit;
     }
     
@@ -234,12 +256,31 @@ function showExtensions($smarty, $db) {
         $edit_data = $edit_result ? $edit_result[0] : null;
     }
     
+    // Mostrar mensajes
+    $msg = getParameter('msg');
+    $alert = '';
+    switch($msg) {
+        case 'added':
+            $alert = '<div class="alert alert-success alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button>Extensión agregada correctamente</div>';
+            break;
+        case 'updated':
+            $alert = '<div class="alert alert-success alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button>Extensión actualizada correctamente</div>';
+            break;
+        case 'deleted':
+            $alert = '<div class="alert alert-success alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button>Extensión eliminada correctamente</div>';
+            break;
+        case 'exists':
+            $alert = '<div class="alert alert-warning alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert">&times;</button>La extensión ya existe</div>';
+            break;
+    }
+    
     $content = '
     <div class="card">
         <div class="card-header">
             <h3>Extensiones Autorizadas</h3>
         </div>
         <div class="card-body">
+            ' . $alert
             <form method="POST" class="mb-3">
                 <input type="hidden" name="action" value="' . ($edit_data ? 'edit' : 'add') . '">
                 ' . ($edit_data ? '<input type="hidden" name="id" value="' . $edit_data[0] . '">' : '') . '
@@ -275,8 +316,10 @@ function showExtensions($smarty, $db) {
                         ' . generateDaysCheckboxes($edit_data) . '
                     </div>
                     <div class="col-md-2">
-                        <button type="submit" class="btn btn-' . ($edit_data ? 'primary' : 'success') . '">' . ($edit_data ? 'Actualizar' : 'Agregar') . '</button>
-                        ' . ($edit_data ? '<a href="?menu=' . getParameter('menu') . '&nav=extensions" class="btn btn-secondary btn-sm">Cancelar</a>' : '') . '
+                        <button type="submit" class="btn btn-' . ($edit_data ? 'primary' : 'success') . '">
+                            <i class="fa fa-' . ($edit_data ? 'save' : 'plus') . '"></i> ' . ($edit_data ? 'Actualizar' : 'Agregar') . '
+                        </button>
+                        ' . ($edit_data ? '<a href="?menu=' . getParameter('menu') . '&nav=extensions" class="btn btn-secondary btn-sm ml-1"><i class="fa fa-times"></i> Cancelar</a>' : '') . '
                     </div>
                 </div>
             </form>
@@ -314,10 +357,14 @@ function showExtensions($smarty, $db) {
                         <td>$status</td>
                         <td>$pstn_status</td>
                         <td>
-                            <a href=\"?menu=" . getParameter('menu') . "&nav=extensions&edit={$ext[0]}\" 
-                               class=\"btn btn-sm btn-primary me-1\">Editar</a>
-                            <a href=\"?menu=" . getParameter('menu') . "&nav=extensions&action=delete&id={$ext[0]}\" 
-                               class=\"btn btn-sm btn-danger\" onclick=\"return confirm('¿Eliminar esta extensión?')\">Eliminar</a>
+                            <div class='btn-group' role='group'>
+                                <a href='?menu=" . getParameter('menu') . "&nav=extensions&edit={$ext[0]}' class='btn btn-sm btn-outline-primary' title='Editar extensión'>
+                                    <i class='fa fa-edit'></i> Editar
+                                </a>
+                                <button type='button' class='btn btn-sm btn-outline-danger' onclick='confirmDelete({$ext[0]}, \"{$ext[1]}\")' title='Eliminar extensión'>
+                                    <i class='fa fa-trash'></i> Eliminar
+                                </button>
+                            </div>
                         </td>
                     </tr>";
     }
@@ -326,7 +373,56 @@ function showExtensions($smarty, $db) {
                 </tbody>
             </table>
         </div>
-    </div>';
+    </div>
+    
+    <script>
+    function confirmDelete(id, extension) {
+        if (confirm("¿Está seguro de que desea eliminar la extensión " + extension + "?\n\nEsta acción no se puede deshacer.")) {
+            window.location.href = "?menu=' . getParameter('menu') . '&nav=extensions&action=delete&id=" + id + "&confirm=yes";
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.querySelector("form[method=POST]");
+        if (form) {
+            form.addEventListener("submit", function(e) {
+                const extension = form.querySelector("input[name=extension]").value.trim();
+                const horaInicio = form.querySelector("input[name=hora_inicio]").value;
+                const horaFin = form.querySelector("input[name=hora_fin]").value;
+                
+                if (!extension) {
+                    alert("Por favor ingrese el número de extensión");
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (!/^\d+$/.test(extension)) {
+                    alert("La extensión debe contener solo números");
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (horaInicio && horaFin && horaInicio >= horaFin) {
+                    alert("La hora de inicio debe ser menor que la hora de fin");
+                    e.preventDefault();
+                    return;
+                }
+                
+                const dias = form.querySelectorAll("input[name^=dia_]");
+                let alMenosUnDia = false;
+                dias.forEach(function(dia) {
+                    if (dia.checked) alMenosUnDia = true;
+                });
+                
+                if (!alMenosUnDia) {
+                    alert("Debe seleccionar al menos un día de la semana");
+                    e.preventDefault();
+                    return;
+                }
+            });
+        }
+    });
+    </script>';
     
     return $content;
 }
